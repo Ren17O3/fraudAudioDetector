@@ -17,7 +17,6 @@ from app.schemas import (
 api_key = os.getenv("API_KEY")
 from app.security import validate_api_key
 from app.inference import predict_voice
-from app.rate_limiter import check_rate_limit
 
 app = FastAPI()
 

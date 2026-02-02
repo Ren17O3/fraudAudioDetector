@@ -90,7 +90,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 from sklearn.decomposition import PCA
 
 pca = PCA(
-    n_components=64,
+    n_components=80,
     random_state=42
 )
 
