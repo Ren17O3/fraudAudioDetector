@@ -2,3 +2,4 @@
 .exe
 DATASET/
 __pycache__/
+*.joblib
