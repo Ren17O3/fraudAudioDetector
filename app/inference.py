@@ -23,7 +23,7 @@ wav2vec_model = Wav2Vec2Model.from_pretrained(
 )
 
 # keep only first N layers
-wav2vec_model.encoder.layers = wav2vec_model.encoder.layers[:8]
+wav2vec_model.encoder.layers = wav2vec_model.encoder.layers[:6]
 
 
 
