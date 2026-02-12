@@ -18,12 +18,9 @@ processor = Wav2Vec2Processor.from_pretrained(
 
 wav2vec_model = Wav2Vec2Model.from_pretrained(
     "facebook/wav2vec2-base",
-    output_hidden_states=True,
     use_safetensors=True
 )
 
-# keep only first N layers
-wav2vec_model.encoder.layers = wav2vec_model.encoder.layers[:6]
 
 
 

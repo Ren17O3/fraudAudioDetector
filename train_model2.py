@@ -104,27 +104,96 @@ print("Explained variance:", pca.explained_variance_ratio_.sum())
 import joblib
 joblib.dump(pca, "pca.joblib")
 
-from sklearn.linear_model import LogisticRegression
 
-clf = LogisticRegression(
-    solver="liblinear",
-    max_iter=1000
-)
 
-clf.fit(X_train_pca, y_train)
-
+import torch
+import torch.nn as nn
+import torch.optim as optim
 from sklearn.metrics import classification_report, confusion_matrix
 
-y_pred = clf.predict(X_test_pca)
+# Convert data to tensors
+X_train_tensor = torch.tensor(X_train_pca, dtype=torch.float32)
+y_train_tensor = torch.tensor(y_train, dtype=torch.float32).unsqueeze(1)
 
-print(confusion_matrix(y_test, y_pred))
+X_test_tensor = torch.tensor(X_test_pca, dtype=torch.float32)
+y_test_tensor = torch.tensor(y_test, dtype=torch.float32).unsqueeze(1)
+
+# -------------------------
+# ANN Model
+# -------------------------
+class VoiceANN(nn.Module):
+    def __init__(self, input_dim):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(input_dim, 64),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+
+            nn.Linear(64, 32),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+
+            nn.Linear(32, 1),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
+model = VoiceANN(input_dim=X_train_pca.shape[1])
+
+# -------------------------
+# Training setup
+# -------------------------
+criterion = nn.BCELoss()
+optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
+
+epochs = 30
+batch_size = 32
+
+# -------------------------
+# Training loop
+# -------------------------
+for epoch in range(epochs):
+    model.train()
+    perm = torch.randperm(X_train_tensor.size(0))
+
+    total_loss = 0
+
+    for i in range(0, X_train_tensor.size(0), batch_size):
+        idx = perm[i:i+batch_size]
+        batch_x = X_train_tensor[idx]
+        batch_y = y_train_tensor[idx]
+
+        optimizer.zero_grad()
+        outputs = model(batch_x)
+        loss = criterion(outputs, batch_y)
+        loss.backward()
+        optimizer.step()
+
+        total_loss += loss.item()
+
+    print(f"Epoch {epoch+1}/{epochs}, Loss: {total_loss:.4f}")
+
+# -------------------------
+# Evaluation
+# -------------------------
+model.eval()
+with torch.no_grad():
+    preds = model(X_test_tensor)
+    preds = (preds > 0.5).int().numpy().flatten()
+
+print(confusion_matrix(y_test, preds))
 print(classification_report(
     y_test,
-    y_pred,
+    preds,
     target_names=["HUMAN", "AI_GENERATED"]
 ))
 
-joblib.dump(clf, "classifier.joblib")
+# -------------------------
+# Save model
+# -------------------------
+torch.save(model.state_dict(), "ann_model.pt")
 
 
 
