@@ -97,7 +97,7 @@ joblib.dump(scaler, "scaler.joblib")
 # -----------------------------
 # PCA with variance-based selection
 # -----------------------------
-pca = PCA(n_components=0.96, random_state=42)
+pca = PCA(n_components=200, random_state=42)
 X_train_pca = pca.fit_transform(X_train_scaled)
 X_test_pca = pca.transform(X_test_scaled)
 
@@ -109,51 +109,35 @@ joblib.dump(pca, "pca.joblib")
 
 from lightgbm import LGBMClassifier
 
-models = {
-    "LogisticRegression": LogisticRegression(
-        solver="liblinear",
-        max_iter=1000,
-        random_state=42
-    ),
-    "LightGBM": LGBMClassifier(
-        n_estimators=300,
-        learning_rate=0.05,
-        num_leaves=31,
-        random_state=42
-    )
-}
+# -----------------------------
+# Train LightGBM only
+# -----------------------------
+print("\nTraining LightGBM...")
 
-best_model = None
-best_score = -1
-best_name = ""
+model = LGBMClassifier(
+    n_estimators=300,
+    learning_rate=0.05,
+    num_leaves=31,
+    random_state=42
+)
 
-for name, model in models.items():
-    print(f"\nTraining {name}...")
-    model.fit(X_train_pca, y_train)
+model.fit(X_train_pca, y_train)
 
-    y_pred = model.predict(X_test_pca)
+y_pred = model.predict(X_test_pca)
 
-    acc = accuracy_score(y_test, y_pred)
-    f1 = f1_score(y_test, y_pred)
+acc = accuracy_score(y_test, y_pred)
+f1 = f1_score(y_test, y_pred)
 
-    print(f"\n{name} Results:")
-    print(confusion_matrix(y_test, y_pred))
-    print(classification_report(
-        y_test,
-        y_pred,
-        target_names=["HUMAN", "AI_GENERATED"]
-    ))
-    print("Accuracy:", acc)
-    print("F1 Score:", f1)
+print("\nLightGBM Results:")
+print(confusion_matrix(y_test, y_pred))
+print(classification_report(
+    y_test,
+    y_pred,
+    target_names=["HUMAN", "AI_GENERATED"]
+))
+print("Accuracy:", acc)
+print("F1 Score:", f1)
 
-    # Track best model
-    if f1 > best_score:
-        best_score = f1
-        best_model = model
-        best_name = name
-
-
-# Save best model
-print(f"\nBest model: {best_name} | F1: {best_score:.4f}")
-joblib.dump(best_model, "classifier.joblib")
-print("Best model saved as classifier.joblib")
+# Save model
+joblib.dump(model, "classifier.joblib")
+print("LightGBM model saved as classifier.joblib")
